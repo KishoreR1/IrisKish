@@ -1,46 +1,46 @@
 import streamlit as st
 import numpy as np
 import pickle
+import requests
+from sklearn.datasets import load_iris
 
-# 1) Load model
-with open('models/iris/random_forest_iris.pkl', 'rb') as f:
-    model = pickle.load(f)
+# Load the Iris dataset (for species names)
+iris = load_iris()
 
-# 2) Streamlit title and inputs
-st.title("Iris Flower Species Predictor")
-sepal_length = st.number_input("Sepal Length (cm)", 0.0, 10.0, 5.0, 0.1)
-sepal_width  = st.number_input("Sepal Width  (cm)", 0.0, 10.0, 3.0, 0.1)
-petal_length = st.number_input("Petal Length (cm)", 0.0, 10.0, 1.5, 0.1)
-petal_width  = st.number_input("Petal Width  (cm)", 0.0, 10.0, 0.3, 0.1)
+# Function to predict the species based on user input
+def predict_species(sepal_length, sepal_width, petal_length, petal_width):
+    input_features = np.array([[sepal_length, sepal_width, petal_length, petal_width]])  # Ensure only 4 features
+    prediction = rf_model.predict(input_features)
+    species = iris.target_names[prediction][0]  # Get species name from prediction
+    return species
 
-# 3) Predict button and display
-if st.button("Predict Iris Species"):
-    # 3.1 Pack inputs and predict
-    input_data = np.array([[sepal_length, sepal_width, petal_length, petal_width]])
-    pred_index = int(model.predict(input_data)[0])
-    
-    # 3.2 Species labels
-    labels = ["Setosa", "Versicolor", "Virginica"]
-    
-    # 3.3 Display as colored buttons
-    cols = st.columns(3)
-    for idx, label in enumerate(labels):
-        if idx == pred_index:
-            bg, fg = "white", "black"
-        else:
-            bg, fg = "#e0e0e0", "#666666"
-        
-        btn_html = f"""
-        <button style="
-          background-color: {bg};
-          color: {fg};
-          border: 1px solid #999;
-          border-radius: 4px;
-          padding: 8px 16px;
-          width: 100%;
-          cursor: default;
-        " disabled>{label}</button>
-        """
-        cols[idx].markdown(btn_html, unsafe_allow_html=True)
+# 1) Correctly define the model URL with the GitHub raw URL for the model
+model_url = 'https://raw.githubusercontent.com/KishoreR1/IrisKish/refs/heads/main/app.py'  # Replace with the actual URL
 
+# 2) Download the pickled model from GitHub
+response = requests.get(model_url)
+with open('rf_model.pkl', 'wb') as f:
+    f.write(response.content)
+
+# 3) Load the pickled model from the file
+with open('rf_model.pkl', 'rb') as f:
+    rf_model = pickle.load(f)
+
+# 4) Create the Streamlit UI
+st.title("Iris Species Predictor")
+
+# 5) Input fields for the user to enter flower measurements
+sepal_length = st.number_input("Sepal Length (cm)", min_value=0.0, max_value=10.0, value=5.0)
+sepal_width = st.number_input("Sepal Width (cm)", min_value=0.0, max_value=10.0, value=3.0)
+petal_length = st.number_input("Petal Length (cm)", min_value=0.0, max_value=10.0, value=4.0)
+petal_width = st.number_input("Petal Width (cm)", min_value=0.0, max_value=10.0, value=1.0)
+
+
+# 6) Button to trigger the prediction
+if st.button("Predict Species"):
+    # Predict species based on user inputs
+    species = predict_species(sepal_length, sepal_width, petal_length, petal_width)
+
+ # 7) Display the predicted species
+    st.write(f"The predicted species is: {species}")
 
